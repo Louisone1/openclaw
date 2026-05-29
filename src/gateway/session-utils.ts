@@ -1,3 +1,4 @@
+// gateway session utils helpers and runtime behavior.
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -103,6 +104,7 @@ import type {
   SessionsListResult,
 } from "./session-utils.types.js";
 
+/** Re-exported API for src/gateway. */
 export {
   archiveFileOnDisk,
   archiveSessionTranscripts,
@@ -125,8 +127,11 @@ export {
   visitSessionMessagesAsync,
   resolveSessionTranscriptCandidates,
 } from "./session-utils.fs.js";
+/** Re-exported API for src/gateway, starting with Read Session Messages Async Options. */
 export type { ReadSessionMessagesAsyncOptions } from "./session-utils.fs.js";
+/** Re-exported API for src/gateway, starting with canonicalize Spawned By For Agent. */
 export { canonicalizeSpawnedByForAgent, resolveSessionStoreKey } from "./session-store-key.js";
+/** Re-exported API for src/gateway. */
 export type {
   GatewayAgentRow,
   GatewaySessionRow,
@@ -217,6 +222,7 @@ function truncateTitle(text: string, maxLen: number): string {
   return cut + "…";
 }
 
+/** Reused helper for derive Session Title behavior in src/gateway. */
 export function deriveSessionTitle(
   entry: SessionEntry | undefined,
   firstUserMessage?: string | null,
@@ -890,6 +896,7 @@ export function resolveDeletedAgentIdFromSessionKey(
   return agentId;
 }
 
+/** Reused helper for load Session Entry behavior in src/gateway. */
 export function loadSessionEntry(sessionKey: string, opts?: { agentId?: string; clone?: boolean }) {
   const cfg = getRuntimeConfig();
   const key = normalizeOptionalString(sessionKey) ?? "";
@@ -913,6 +920,7 @@ export function loadSessionEntry(sessionKey: string, opts?: { agentId?: string; 
   };
 }
 
+/** Reused helper for resolve Freshest Session Store Match From Store Keys behavior in src/gateway. */
 export function resolveFreshestSessionStoreMatchFromStoreKeys(
   store: Record<string, SessionEntry>,
   storeKeys: string[],
@@ -931,6 +939,7 @@ export function resolveFreshestSessionStoreMatchFromStoreKeys(
   return freshest;
 }
 
+/** Reused helper for resolve Freshest Session Entry From Store Keys behavior in src/gateway. */
 export function resolveFreshestSessionEntryFromStoreKeys(
   store: Record<string, SessionEntry>,
   storeKeys: string[],
@@ -1018,6 +1027,7 @@ export function pruneLegacyStoreKeys(params: {
   }
 }
 
+/** Reused helper for migrate And Prune Gateway Session Store Key behavior in src/gateway. */
 export function migrateAndPruneGatewaySessionStoreKey(params: {
   cfg: OpenClawConfig;
   key: string;
@@ -1049,6 +1059,7 @@ export function migrateAndPruneGatewaySessionStoreKey(params: {
   return { target, primaryKey, entry: params.store[primaryKey] };
 }
 
+/** Reused helper for classify Session Key behavior in src/gateway. */
 export function classifySessionKey(key: string, entry?: SessionEntry): GatewaySessionRow["kind"] {
   if (key === "global") {
     return "global";
@@ -1065,6 +1076,7 @@ export function classifySessionKey(key: string, entry?: SessionEntry): GatewaySe
   return "direct";
 }
 
+/** Reused helper for parse Group Key behavior in src/gateway. */
 export function parseGroupKey(
   key: string,
 ): { channel?: string; kind?: "group" | "channel"; id?: string } | null {
@@ -1156,6 +1168,7 @@ function resolveGatewayAgentModel(
   };
 }
 
+/** Reused helper for list Agents For Gateway behavior in src/gateway. */
 export function listAgentsForGateway(cfg: OpenClawConfig): {
   defaultId: string;
   mainKey: string;
@@ -1405,6 +1418,7 @@ function resolveExplicitDeletedLegacyMainStoreTarget(params: {
   };
 }
 
+/** Reused helper for resolve Gateway Session Store Target behavior in src/gateway. */
 export function resolveGatewaySessionStoreTarget(params: {
   cfg: OpenClawConfig;
   key: string;
@@ -1480,8 +1494,10 @@ export function resolveGatewaySessionStoreTarget(params: {
   };
 }
 
+/** Re-exported API for src/gateway, starting with load Combined Session Store For Gateway. */
 export { loadCombinedSessionStoreForGateway } from "../config/sessions/combined-store-gateway.js";
 
+/** Reused helper for resolve Gateway Session Thinking Default behavior in src/gateway. */
 export function resolveGatewaySessionThinkingDefault(params: {
   cfg: OpenClawConfig;
   provider: string;
@@ -1503,6 +1519,7 @@ export function resolveGatewaySessionThinkingDefault(params: {
   );
 }
 
+/** Reused helper for get Session Defaults behavior in src/gateway. */
 export function getSessionDefaults(
   cfg: OpenClawConfig,
   modelCatalog?: ModelCatalogEntry[],
@@ -1534,6 +1551,7 @@ export function getSessionDefaults(
   };
 }
 
+/** Reused helper for resolve Session Model Ref behavior in src/gateway. */
 export function resolveSessionModelRef(
   cfg: OpenClawConfig,
   entry?:
@@ -1587,6 +1605,7 @@ export function resolveSessionModelRef(
   return resolved;
 }
 
+/** Reused helper for resolve Gateway Model Supports Images behavior in src/gateway. */
 export async function resolveGatewayModelSupportsImages(params: {
   loadGatewayModelCatalog: (params?: { readOnly?: boolean }) => Promise<ModelCatalogEntry[]>;
   provider?: string;
@@ -1660,6 +1679,7 @@ export async function resolveGatewayModelSupportsImages(params: {
   }
 }
 
+/** Reused helper for resolve Session Model Identity Ref behavior in src/gateway. */
 export function resolveSessionModelIdentityRef(
   cfg: OpenClawConfig,
   entry?:
@@ -1740,6 +1760,7 @@ function resolveSessionDisplayModelIdentityRefCached(params: {
   return value;
 }
 
+/** Reused helper for resolve Session Display Model Identity Ref behavior in src/gateway. */
 export function resolveSessionDisplayModelIdentityRef(params: {
   cfg: OpenClawConfig;
   agentId: string;
@@ -1779,6 +1800,7 @@ export function resolveSessionDisplayModelIdentityRef(params: {
   };
 }
 
+/** Reused helper for build Gateway Session Row behavior in src/gateway. */
 export function buildGatewaySessionRow(params: {
   cfg: OpenClawConfig;
   storePath: string;
@@ -2199,6 +2221,7 @@ function resolveSessionListSearchModelFields(params: {
   return fields;
 }
 
+/** Reused helper for load Gateway Session Row behavior in src/gateway. */
 export function loadGatewaySessionRow(
   sessionKey: string,
   options?: {
@@ -2456,6 +2479,7 @@ function selectSessionEntries(params: {
   };
 }
 
+/** Reused helper for filter And Sort Session Entries behavior in src/gateway. */
 export function filterAndSortSessionEntries(params: {
   cfg: OpenClawConfig;
   store: Record<string, SessionEntry>;
@@ -2466,6 +2490,7 @@ export function filterAndSortSessionEntries(params: {
   return selectSessionEntries(params).entries;
 }
 
+/** Reused helper for list Sessions From Store behavior in src/gateway. */
 export function listSessionsFromStore(params: {
   cfg: OpenClawConfig;
   storePath: string;
