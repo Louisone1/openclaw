@@ -341,16 +341,12 @@ import {
 import {
   resolveAttemptStreamAuthProfileId,
   resolveAttemptToolPolicyMessageProvider,
-  resolveEmbeddedAttemptSessionWriteLockOptions,
   resolveUnknownToolGuardThreshold,
   shouldRunLlmOutputHooksForAttempt,
 } from "./attempt.run-decisions.js";
 import {
-  acquireEmbeddedAttemptSessionFileOwner,
   EmbeddedAttemptSessionTakeoverError,
-  type EmbeddedAttemptSessionFileOwner,
   type EmbeddedAttemptSessionLockController,
-  createEmbeddedAttemptSessionLockController,
   installPromptSubmissionLockRelease,
 } from "./attempt.session-lock.js";
 import {
@@ -567,7 +563,6 @@ function summarizeSessionContext(messages: AgentMessage[]): {
 export const __testing = {
   cancelQueuedSteeringMessage,
   insertRuntimeContextMessageForPrompt,
-  resolveEmbeddedAttemptSessionWriteLockOptions,
   steerAndWaitForTranscriptCommit,
   resolveAttemptStreamAuthProfileId,
 };
@@ -875,7 +870,6 @@ export async function runEmbeddedAttempt(
   let beforeAgentRunBlockedBy: string | undefined;
   // Releases the eager session lock if post-prompt code exits before cleanup.
   let releaseRetainedSessionLock: (() => Promise<void>) | undefined;
-  let retainedSessionFileOwner: EmbeddedAttemptSessionFileOwner | undefined;
   let bundleMcpRuntime: Awaited<ReturnType<typeof materializeBundleMcpToolsForRun>> | undefined;
   let bundleLspRuntime: Awaited<ReturnType<typeof createBundleLspToolRuntime>> | undefined;
   let toolSearchCatalogRef: ToolSearchCatalogRef | undefined;
@@ -1847,28 +1841,8 @@ export async function runEmbeddedAttempt(
     let systemPromptText = attemptSystemPrompt.systemPrompt;
     prepStages.mark("system-prompt");
 
-    const compactionTimeoutMs = resolveCompactionTimeoutMs(params.config);
-    const sessionWriteLockOptions = resolveEmbeddedAttemptSessionWriteLockOptions({
-      config: params.config,
-      compactionTimeoutMs,
-    });
     await throwIfAttemptAbortSignalFiredAfterPrepCleanup();
-    if (params.sessionFile) {
-      retainedSessionFileOwner = await acquireEmbeddedAttemptSessionFileOwner({
-        sessionFile: params.sessionFile,
-        timeoutMs: sessionWriteLockOptions.maxHoldMs,
-        signal: params.abortSignal,
-      });
-    }
-    const sessionLockController = params.sessionFile
-      ? await createEmbeddedAttemptSessionLockController({
-          acquireSessionWriteLock,
-          lockOptions: {
-            sessionFile: params.sessionFile,
-            ...sessionWriteLockOptions,
-          },
-        })
-      : createSqliteAttemptSessionLockController();
+    const sessionLockController = createSqliteAttemptSessionLockController();
     releaseRetainedSessionLock = () => sessionLockController.dispose();
     armExternalAbortSignal();
 
@@ -2990,7 +2964,6 @@ export async function runEmbeddedAttempt(
       const abortable = <T>(promise: Promise<T>): Promise<T> =>
         abortableWithSignal(runAbortController.signal, promise);
       const ownedTranscriptWriteContext = {
-        sessionFile: params.sessionFile,
         sessionKey: params.sessionKey,
         withSessionWriteLock: <T>(
           operation: () => Promise<T> | T,
@@ -3725,7 +3698,6 @@ export async function runEmbeddedAttempt(
               releaseForPrompt: () => sessionLockController.releaseForPrompt(),
               reacquireAfterPrompt: () => sessionLockController.reacquireAfterPrompt(),
               sessionKey: params.sessionKey,
-              sessionFile: params.sessionFile,
               withSessionWriteLock: (run) => sessionLockController.withSessionWriteLock(run),
             });
           }
@@ -4929,8 +4901,6 @@ export async function runEmbeddedAttempt(
         `failed to release retained session lock on attempt teardown: runId=${params.runId} ${String(releaseErr)}`,
       );
     }
-    retainedSessionFileOwner?.release();
-    retainedSessionFileOwner = undefined;
     emitDiagnosticRunCompleted?.(
       aborted ? "aborted" : "error",
       promptError ?? new Error("run exited before diagnostic completion"),
