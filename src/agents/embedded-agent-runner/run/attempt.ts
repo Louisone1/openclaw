@@ -235,7 +235,6 @@ import {
   type EmbeddedAgentQueueHandle,
   markActiveEmbeddedRunAbandoned,
   setActiveEmbeddedRun,
-  updateActiveEmbeddedRunSessionFile,
   updateActiveEmbeddedRunSnapshot,
 } from "../runs.js";
 import { buildEmbeddedSandboxInfo, resolveEmbeddedSandboxInfoExecPolicy } from "../sandbox-info.js";
@@ -2974,7 +2973,6 @@ export async function runEmbeddedAttempt(
             sessionId: params.sessionId,
             handle: queueHandleForAbandonment,
             sessionKey: params.sessionKey,
-            sessionFile: params.sessionFile,
             reason: "timeout",
           });
           void sessionLockController.releaseHeldLockForAbort().catch((err) => {
@@ -3042,12 +3040,7 @@ export async function runEmbeddedAttempt(
           onBeforeLifecycleTerminal: () => {
             // Clear embedded-run activity before emitting terminal lifecycle events so
             // post-completion cleanup does not observe a logically finished run as active.
-            clearActiveEmbeddedRun(
-              params.sessionId,
-              queueHandle,
-              params.sessionKey,
-              params.sessionFile,
-            );
+            clearActiveEmbeddedRun(params.sessionId, queueHandle, params.sessionKey);
           },
           enforceFinalTag: params.enforceFinalTag,
           silentExpected: params.silentExpected,
@@ -3163,7 +3156,7 @@ export async function runEmbeddedAttempt(
         params.replyOperation.attachBackend(queueHandle);
       }
       queueHandleForAbandonment = queueHandle;
-      setActiveEmbeddedRun(params.sessionId, queueHandle, params.sessionKey, params.sessionFile);
+      setActiveEmbeddedRun(params.sessionId, queueHandle, params.sessionKey);
 
       let abortWarnTimer: NodeJS.Timeout | undefined;
       const isProbeSession = params.sessionId?.startsWith("probe-") ?? false;
@@ -3227,7 +3220,6 @@ export async function runEmbeddedAttempt(
 
       let messagesSnapshot: AgentMessage[] = [];
       let sessionIdUsed = activeSession.sessionId;
-      let sessionFileUsed: string | undefined = params.sessionFile;
       const onAbort = () => {
         externalAbort = true;
         const reason = params.abortSignal ? getAbortReason(params.abortSignal) : undefined;
@@ -4419,7 +4411,6 @@ export async function runEmbeddedAttempt(
               });
               if (rotation.rotated) {
                 sessionIdUsed = rotation.sessionId ?? sessionIdUsed;
-                updateActiveEmbeddedRunSessionFile(params.sessionId, sessionFileUsed);
                 log.info(
                   `[compaction] rotated active transcript after automatic compaction ` +
                     `(sessionKey=${params.sessionKey ?? params.sessionId})`,
@@ -4493,12 +4484,7 @@ export async function runEmbeddedAttempt(
         if (params.replyOperation) {
           params.replyOperation.detachBackend(queueHandle);
         }
-        clearActiveEmbeddedRun(
-          params.sessionId,
-          queueHandle,
-          params.sessionKey,
-          params.sessionFile,
-        );
+        clearActiveEmbeddedRun(params.sessionId, queueHandle, params.sessionKey);
         params.abortSignal?.removeEventListener?.("abort", onAbort);
       }
 
@@ -4782,7 +4768,6 @@ export async function runEmbeddedAttempt(
         promptErrorSource,
         preflightRecovery,
         sessionIdUsed,
-        sessionFileUsed,
         diagnosticTrace,
         bootstrapPromptWarningSignaturesSeen: bootstrapPromptWarning.warningSignaturesSeen,
         bootstrapPromptWarningSignature: bootstrapPromptWarning.signature,

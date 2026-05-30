@@ -17,7 +17,6 @@ export {
   queueEmbeddedAgentMessageWithOutcome,
   resolveActiveEmbeddedAgentRunSessionId,
   resolveActiveEmbeddedRunSessionId,
-  resolveActiveEmbeddedRunSessionIdBySessionFile,
   resolveEmbeddedSessionLane,
   runEmbeddedAgent,
   runEmbeddedPiAgent,

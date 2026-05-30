@@ -48,7 +48,6 @@ export type EmbeddedRunWaiter = {
 export type AbandonedEmbeddedRun = {
   sessionId: string;
   sessionKey?: string;
-  sessionFile?: string;
   abandonedAtMs: number;
   reason: "timeout";
 };
@@ -59,10 +58,8 @@ const embeddedRunState = resolveGlobalSingleton(EMBEDDED_RUN_STATE_KEY, () => ({
   activeRuns: new Map<string, EmbeddedAgentQueueHandle>(),
   snapshots: new Map<string, ActiveEmbeddedRunSnapshot>(),
   sessionIdsByKey: new Map<string, string>(),
-  sessionIdsByFile: new Map<string, string>(),
   abandonedRunsBySessionId: new Map<string, AbandonedEmbeddedRun>(),
   abandonedRunSessionIdsByKey: new Map<string, string>(),
-  abandonedRunSessionIdsByFile: new Map<string, string>(),
   waiters: new Map<string, Set<EmbeddedRunWaiter>>(),
   modelSwitchRequests: new Map<string, EmbeddedRunModelSwitchRequest>(),
 }));
@@ -76,18 +73,12 @@ export const ACTIVE_EMBEDDED_RUN_SNAPSHOTS =
 export const ACTIVE_EMBEDDED_RUN_SESSION_IDS_BY_KEY =
   embeddedRunState.sessionIdsByKey ??
   (embeddedRunState.sessionIdsByKey = new Map<string, string>());
-export const ACTIVE_EMBEDDED_RUN_SESSION_IDS_BY_FILE =
-  embeddedRunState.sessionIdsByFile ??
-  (embeddedRunState.sessionIdsByFile = new Map<string, string>());
 export const ABANDONED_EMBEDDED_RUNS_BY_SESSION_ID =
   embeddedRunState.abandonedRunsBySessionId ??
   (embeddedRunState.abandonedRunsBySessionId = new Map<string, AbandonedEmbeddedRun>());
 export const ABANDONED_EMBEDDED_RUN_SESSION_IDS_BY_KEY =
   embeddedRunState.abandonedRunSessionIdsByKey ??
   (embeddedRunState.abandonedRunSessionIdsByKey = new Map<string, string>());
-export const ABANDONED_EMBEDDED_RUN_SESSION_IDS_BY_FILE =
-  embeddedRunState.abandonedRunSessionIdsByFile ??
-  (embeddedRunState.abandonedRunSessionIdsByFile = new Map<string, string>());
 export const EMBEDDED_RUN_WAITERS =
   embeddedRunState.waiters ??
   (embeddedRunState.waiters = new Map<string, Set<EmbeddedRunWaiter>>());
@@ -119,7 +110,6 @@ export function listActiveEmbeddedRunSessionIds(): string[] {
     ...new Set([
       ...ACTIVE_EMBEDDED_RUNS.keys(),
       ...ACTIVE_EMBEDDED_RUN_SESSION_IDS_BY_KEY.values(),
-      ...ACTIVE_EMBEDDED_RUN_SESSION_IDS_BY_FILE.values(),
       ...listActiveReplyRunSessionIds(),
     ]),
   ].toSorted((a, b) => a.localeCompare(b));
