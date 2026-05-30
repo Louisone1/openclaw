@@ -66,7 +66,7 @@ import { ensureLoaded, persist } from "./store.js";
 import { CRON_TASK_RUNNING_PROGRESS_SUMMARY } from "./task-ledger.js";
 import { resolveCronJobTimeoutMs } from "./timeout-policy.js";
 
-/** Re-exported API for src/cron/service, starting with DEFAULT JOB TIMEOUT MS. */
+/** Default cron job timeout policy re-exported with timer helpers. */
 export { DEFAULT_JOB_TIMEOUT_MS } from "./timeout-policy.js";
 
 const MAX_TIMER_DELAY_MS = 60_000;
@@ -160,7 +160,7 @@ type CronAgentWatchdog = {
   dispose: () => void;
 };
 
-/** Reused helper for execute Job Core With Timeout behavior in src/cron/service. */
+/** Executes cron job core work with optional timeout and agent-run cleanup. */
 export async function executeJobCoreWithTimeout(
   state: CronServiceState,
   job: CronJob,
@@ -425,7 +425,7 @@ function isAbortError(err: unknown): boolean {
   return err.name === "AbortError" || err.message === timeoutErrorMessage();
 }
 
-/** Reused helper for normalize Cron Run Error Text behavior in src/cron/service. */
+/** Normalizes thrown cron run errors into user-facing text. */
 export function normalizeCronRunErrorText(err: unknown): string {
   if (isAbortError(err)) {
     return timeoutErrorMessage();
@@ -724,7 +724,7 @@ function resolveDeliveryState(params: {
   return { status: "unknown", failureNotification: { status: "not-requested" } };
 }
 
-/** Reused helper for failure Notification Delivery From Job State behavior in src/cron/service. */
+/** Builds failure-notification delivery state from persisted job state. */
 export function failureNotificationDeliveryFromJobState(
   job: CronJob,
 ): CronFailureNotificationDelivery | undefined {
@@ -1227,7 +1227,7 @@ function applyOutcomeToStoredJob(state: CronServiceState, result: TimedCronRunOu
   }
 }
 
-/** Reused helper for arm Timer behavior in src/cron/service. */
+/** Arms the next scheduler wake timer or a maintenance recheck timer. */
 export function armTimer(state: CronServiceState) {
   if (state.timer) {
     clearTimeout(state.timer);
@@ -1297,7 +1297,7 @@ function armRunningRecheckTimer(state: CronServiceState) {
   }, MAX_TIMER_DELAY_MS);
 }
 
-/** Reused helper for on Timer behavior in src/cron/service. */
+/** Handles one scheduler tick: load, run due jobs, persist, and re-arm. */
 export async function onTimer(state: CronServiceState) {
   if (state.running) {
     // Re-arm the timer so the scheduler keeps ticking even when a job is
@@ -1624,7 +1624,7 @@ function deferPendingBackoffMissedCronSlots(
   return changed;
 }
 
-/** Reused helper for run Missed Jobs behavior in src/cron/service. */
+/** Runs startup catch-up jobs that were missed while the process was offline. */
 export async function runMissedJobs(
   state: CronServiceState,
   opts?: { skipJobIds?: ReadonlySet<string>; deferAgentTurnJobs?: boolean },
@@ -1834,7 +1834,7 @@ async function applyStartupCatchupOutcomes(
   });
 }
 
-/** Reused helper for execute Job Core behavior in src/cron/service. */
+/** Executes one cron job payload without applying stored job state updates. */
 export async function executeJobCore(
   state: CronServiceState,
   job: CronJob,
@@ -2170,7 +2170,7 @@ function emitJobFinished(
   });
 }
 
-/** Reused helper for wake behavior in src/cron/service. */
+/** Enqueues a manual wake event and requests the appropriate heartbeat. */
 export function wake(
   state: CronServiceState,
   opts: { mode: "now" | "next-heartbeat"; text: string; sessionKey?: string },
@@ -2214,7 +2214,7 @@ export function wake(
   return { ok: true } as const;
 }
 
-/** Reused helper for stop Timer behavior in src/cron/service. */
+/** Clears any active cron scheduler timer. */
 export function stopTimer(state: CronServiceState) {
   if (state.timer) {
     clearTimeout(state.timer);
@@ -2222,7 +2222,7 @@ export function stopTimer(state: CronServiceState) {
   state.timer = null;
 }
 
-/** Reused helper for emit behavior in src/cron/service. */
+/** Emits a cron event to the optional observer without failing the scheduler. */
 export function emit(state: CronServiceState, evt: CronEvent) {
   try {
     state.deps.onEvent?.(evt);
