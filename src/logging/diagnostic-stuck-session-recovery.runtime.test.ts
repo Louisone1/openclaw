@@ -16,9 +16,7 @@ const mocks = vi.hoisted(() => ({
   getCommandLaneSnapshot: vi.fn(),
   resetCommandLane: vi.fn(),
   resolveActiveEmbeddedRunSessionId: vi.fn(),
-  resolveActiveEmbeddedRunSessionIdBySessionFile: vi.fn(),
   resolveActiveEmbeddedRunHandleSessionId: vi.fn(),
-  resolveActiveEmbeddedRunHandleSessionIdBySessionFile: vi.fn(),
   resolveEmbeddedSessionLane: vi.fn((key: string) => `session:${key}`),
   waitForEmbeddedAgentRunEnd: vi.fn(),
   getDiagnosticSessionActivitySnapshot: vi.fn(),
@@ -51,11 +49,7 @@ vi.mock("../agents/embedded-agent-runner/runs.js", () => ({
   isEmbeddedAgentRunActive: mocks.isEmbeddedAgentRunActive,
   isEmbeddedAgentRunHandleActive: mocks.isEmbeddedAgentRunHandleActive,
   resolveActiveEmbeddedRunSessionId: mocks.resolveActiveEmbeddedRunSessionId,
-  resolveActiveEmbeddedRunSessionIdBySessionFile:
-    mocks.resolveActiveEmbeddedRunSessionIdBySessionFile,
   resolveActiveEmbeddedRunHandleSessionId: mocks.resolveActiveEmbeddedRunHandleSessionId,
-  resolveActiveEmbeddedRunHandleSessionIdBySessionFile:
-    mocks.resolveActiveEmbeddedRunHandleSessionIdBySessionFile,
   waitForEmbeddedAgentRunEnd: mocks.waitForEmbeddedAgentRunEnd,
 }));
 
@@ -98,9 +92,7 @@ function resetMocks() {
   });
   mocks.resetCommandLane.mockReset();
   mocks.resolveActiveEmbeddedRunSessionId.mockReset();
-  mocks.resolveActiveEmbeddedRunSessionIdBySessionFile.mockReset();
   mocks.resolveActiveEmbeddedRunHandleSessionId.mockReset();
-  mocks.resolveActiveEmbeddedRunHandleSessionIdBySessionFile.mockReset();
   mocks.resolveEmbeddedSessionLane.mockClear();
   mocks.waitForEmbeddedAgentRunEnd.mockReset();
   mocks.getDiagnosticSessionActivitySnapshot.mockReset();
@@ -161,28 +153,6 @@ describe("stuck session recovery", () => {
       "stuck session recovery skipped: sessionId=session-1 sessionKey=agent:main:main age=180s queueDepth=1 activeSessionId=session-1",
       "stuck session recovery outcome: status=skipped action=observe_only sessionId=session-1 sessionKey=agent:main:main activeSessionId=session-1 activeWorkKind=embedded_run reason=active_embedded_run",
     ]);
-  });
-
-  it("does not release a sibling-key lane while the same session file has an active run", async () => {
-    mocks.resolveActiveEmbeddedRunHandleSessionId.mockReturnValue(undefined);
-    mocks.resolveActiveEmbeddedRunHandleSessionIdBySessionFile.mockReturnValue("session-file-run");
-
-    const outcome = await recoverStuckDiagnosticSession({
-      sessionId: "sibling-session",
-      sessionKey: "agent:main:fallback",
-      sessionFile: "/tmp/openclaw-shared-session.jsonl",
-      ageMs: 180_000,
-      queueDepth: 1,
-    });
-
-    expect(outcome).toMatchObject({
-      status: "skipped",
-      action: "observe_only",
-      reason: "active_embedded_run",
-      activeSessionId: "session-file-run",
-    });
-    expect(mocks.abortEmbeddedAgentRun).not.toHaveBeenCalled();
-    expect(mocks.resetCommandLane).not.toHaveBeenCalled();
   });
 
   it("reclaims a stale active embedded run with queued work and no forward progress (#85639)", async () => {
