@@ -30,6 +30,7 @@ import {
   rotateTranscriptAfterCompactionMock,
   resetCompactHooksHarnessMocks,
   resetCompactSessionStateMocks,
+  runtimePlanToolsNormalizeMock,
   sessionAbortCompactionMock,
   sessionMessages,
   sessionCompactImpl,
@@ -464,18 +465,37 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
       authStorage: { setRuntimeApiKey: vi.fn() },
       modelRegistry: {},
     });
+    runtimePlanToolsNormalizeMock.mockImplementation((tools) => {
+      for (const tool of tools as Array<{ parameters?: unknown }>) {
+        void tool.parameters;
+      }
+      return tools;
+    });
+    const unreadableSchemaTool: Record<string, unknown> = {
+      name: "fuzzplugin_move_delta",
+      label: "Fuzz Plugin Move Delta",
+      description: "Synthetic malformed tool.",
+      execute: async () => ({ text: "bad" }),
+    };
+    Object.defineProperty(unreadableSchemaTool, "parameters", {
+      enumerable: true,
+      get() {
+        throw new Error("fuzzplugin tool schema is unreadable");
+      },
+    });
     createOpenClawCodingToolsMock.mockReturnValueOnce([
       {
-        name: "healthy_lookup",
+        name: "mockplugin_lookup",
         label: "Healthy Lookup",
         description: "Look up safe data.",
         parameters: { type: "object", properties: {} },
         execute: async () => ({ text: "ok" }),
       },
+      unreadableSchemaTool,
       {
-        name: "dofbot_move_angles",
-        label: "Dofbot Move Angles",
-        description: "Move robot joints.",
+        name: "fuzzplugin_array_delta",
+        label: "Fuzz Plugin Array Delta",
+        description: "Synthetic unsupported schema.",
         parameters: { type: "array", items: { type: "number" } },
         execute: async () => ({ text: "bad" }),
       },
@@ -492,8 +512,8 @@ describe("compactEmbeddedAgentSessionDirect hooks", () => {
     const sessionOptions = expectRecordFields(mockCallArg(createAgentSessionMock), {});
     expect(
       (sessionOptions.customTools as Array<{ name: string }>).map((tool) => tool.name),
-    ).toEqual(["healthy_lookup"]);
-    expect(sessionOptions.tools).toEqual(["healthy_lookup"]);
+    ).toEqual(["mockplugin_lookup"]);
+    expect(sessionOptions.tools).toEqual(["mockplugin_lookup"]);
   });
 
   it("clamps the caller context token budget to the compaction model", async () => {
