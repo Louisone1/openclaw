@@ -197,7 +197,7 @@ function resolveUpdatedBindingExpiry(params: {
   return Math.min(...expiries);
 }
 
-/** Reused constant for handle Activation Command behavior in src/auto-reply/reply. */
+/** Handle group activation/deactivation chat commands. */
 export const handleActivationCommand: CommandHandler = async (params, allowTextCommands) => {
   if (!allowTextCommands) {
     return null;
@@ -237,7 +237,7 @@ export const handleActivationCommand: CommandHandler = async (params, allowTextC
   };
 };
 
-/** Reused constant for handle Send Policy Command behavior in src/auto-reply/reply. */
+/** Handle per-session send policy chat commands. */
 export const handleSendPolicyCommand: CommandHandler = async (params, allowTextCommands) => {
   if (!allowTextCommands) {
     return null;
@@ -280,7 +280,7 @@ export const handleSendPolicyCommand: CommandHandler = async (params, allowTextC
   };
 };
 
-/** Reused constant for handle Usage Command behavior in src/auto-reply/reply. */
+/** Handle `/usage` session and aggregate cost summaries. */
 export const handleUsageCommand: CommandHandler = async (params, allowTextCommands) => {
   if (!allowTextCommands) {
     return null;
@@ -371,7 +371,7 @@ export const handleUsageCommand: CommandHandler = async (params, allowTextComman
   };
 };
 
-/** Reused constant for handle Fast Command behavior in src/auto-reply/reply. */
+/** Handle `/fast` mode toggles for the current session. */
 export const handleFastCommand: CommandHandler = async (params, allowTextCommands) => {
   if (!allowTextCommands) {
     return null;
@@ -446,7 +446,7 @@ export const handleFastCommand: CommandHandler = async (params, allowTextCommand
   };
 };
 
-/** Reused constant for handle Session Command behavior in src/auto-reply/reply. */
+/** Handle `/session` binding idle/max-age inspection and updates. */
 export const handleSessionCommand: CommandHandler = async (params, allowTextCommands) => {
   if (!allowTextCommands) {
     return null;
@@ -666,7 +666,7 @@ export const handleSessionCommand: CommandHandler = async (params, allowTextComm
     },
   };
 };
-/** Reused constant for handle Restart Command behavior in src/auto-reply/reply. */
+/** Handle `/restart` by writing a restart sentinel and triggering gateway restart. */
 export const handleRestartCommand: CommandHandler = async (params, allowTextCommands) => {
   if (!allowTextCommands) {
     return null;
@@ -749,5 +749,5 @@ export const handleRestartCommand: CommandHandler = async (params, allowTextComm
   };
 };
 
-/** Re-exported API for src/auto-reply/reply, starting with handle Abort Trigger. */
+/** Abort/stop command handlers re-exported for session command routing. */
 export { handleAbortTrigger, handleStopCommand };
