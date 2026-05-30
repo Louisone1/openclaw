@@ -23,7 +23,7 @@ import {
 import type { SessionEntry } from "./types.js";
 
 export type SessionTranscriptAppendResult =
-  | { ok: true; messageId: string; sessionFile?: string }
+  | { ok: true; messageId: string }
   | { ok: false; reason: string };
 
 export type SessionTranscriptUpdateMode = "inline" | "signal-only" | "none";

@@ -3159,9 +3159,7 @@ export const chatHandlers: GatewayRequestHandlers = {
                   };
                   const mediaLocalRoots = appendLocalMediaParentRoots(
                     getAgentScopedMediaLocalRoots(cfg, agentId),
-                    [latestDatabasePath, latestEntry?.sessionFile].filter(
-                      (source): source is string => typeof source === "string" && source.length > 0,
-                    ),
+                    latestDatabasePath ? [latestDatabasePath] : [],
                   );
                   const buildReplyAssistantContent = async (
                     payloads: typeof finalPayloads,
