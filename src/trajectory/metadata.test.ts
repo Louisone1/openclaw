@@ -196,7 +196,6 @@ describe("trajectory metadata", () => {
   it("tolerates skill snapshot entries with missing name/paths (symlink-escape rejects)", () => {
     const metadata = buildTrajectoryRunMetadata({
       workspaceDir: "/tmp/workspace",
-      sessionFile: "/tmp/workspace/session.jsonl",
       timeoutMs: 30_000,
       skillsSnapshot: {
         prompt: "skill prompt",
@@ -238,7 +237,6 @@ describe("trajectory metadata", () => {
   it("falls back to skills list when every resolvedSkills entry is partial", () => {
     const metadata = buildTrajectoryRunMetadata({
       workspaceDir: "/tmp/workspace",
-      sessionFile: "/tmp/workspace/session.jsonl",
       timeoutMs: 30_000,
       skillsSnapshot: {
         prompt: "skill prompt",

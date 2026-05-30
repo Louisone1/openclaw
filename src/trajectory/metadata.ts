@@ -20,7 +20,6 @@ type BuildTrajectoryRunMetadataParams = {
   workspaceDir: string;
   sessionId?: string;
   sessionKey?: string;
-  sessionFile?: string;
   agentId?: string;
   trigger?: string;
   messageProvider?: string;
