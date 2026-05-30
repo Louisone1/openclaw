@@ -16,6 +16,7 @@ import {
 } from "./transcript-store.sqlite.js";
 import {
   bindOwnedSessionTranscriptWrites,
+  runWithOwnedSessionTranscriptWriteLock,
   withOwnedSessionTranscriptWrites,
 } from "./transcript-write-context.js";
 import {
@@ -943,5 +944,86 @@ describe("appendAssistantMessageToSessionTranscript", () => {
     });
 
     fs.rmSync(stateDir, { recursive: true, force: true });
+  });
+});
+
+describe("owned transcript write contexts", () => {
+  function createTranscriptWriteLockRunner() {
+    const calls: Array<{ publishOwnedWrite?: boolean }> = [];
+    const withSessionWriteLock = async <T>(
+      run: () => Promise<T> | T,
+      options?: { publishOwnedWrite?: boolean },
+    ): Promise<T> => {
+      calls.push({ publishOwnedWrite: options?.publishOwnedWrite });
+      return await run();
+    };
+    return { calls, withSessionWriteLock };
+  }
+
+  it("reuses owned locks for matching session keys", async () => {
+    const lockRunner = createTranscriptWriteLockRunner();
+
+    await expect(
+      withOwnedSessionTranscriptWrites(
+        {
+          sessionKey: "agent:main:telegram:direct:123",
+          withSessionWriteLock: lockRunner.withSessionWriteLock,
+        },
+        async () =>
+          await runWithOwnedSessionTranscriptWriteLock(
+            { sessionKey: "agent:main:telegram:direct:123" },
+            async () => "locked",
+          ),
+      ),
+    ).resolves.toBe("locked");
+    expect(lockRunner.calls).toHaveLength(1);
+  });
+
+  it("does not reuse owned locks across session keys", async () => {
+    const lockRunner = createTranscriptWriteLockRunner();
+
+    await expect(
+      withOwnedSessionTranscriptWrites(
+        {
+          sessionKey: "agent:main:telegram:direct:123",
+          withSessionWriteLock: lockRunner.withSessionWriteLock,
+        },
+        async () =>
+          await runWithOwnedSessionTranscriptWriteLock(
+            { sessionKey: "agent:main:telegram:direct:456" },
+            async () => "unlocked",
+          ),
+      ),
+    ).resolves.toBe("unlocked");
+    expect(lockRunner.calls).toHaveLength(0);
+  });
+
+  it("keeps bound callbacks inside the owned session key context", async () => {
+    const lockRunner = createTranscriptWriteLockRunner();
+    let bound: (() => Promise<string>) | undefined;
+
+    await withOwnedSessionTranscriptWrites(
+      {
+        sessionKey: "agent:main:telegram:direct:123",
+        withSessionWriteLock: lockRunner.withSessionWriteLock,
+      },
+      async () => {
+        bound = bindOwnedSessionTranscriptWrites(
+          {
+            sessionKey: "agent:main:telegram:direct:123",
+            withSessionWriteLock: lockRunner.withSessionWriteLock,
+          },
+          async () =>
+            await runWithOwnedSessionTranscriptWriteLock(
+              { sessionKey: "agent:main:telegram:direct:123" },
+              async () => "bound",
+            ),
+        );
+      },
+    );
+
+    expect(bound).toBeDefined();
+    await expect(bound?.()).resolves.toBe("bound");
+    expect(lockRunner.calls).toHaveLength(1);
   });
 });
