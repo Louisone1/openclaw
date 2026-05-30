@@ -66,7 +66,6 @@ import { ensureLoaded, persist } from "./store.js";
 import { CRON_TASK_RUNNING_PROGRESS_SUMMARY } from "./task-ledger.js";
 import { resolveCronJobTimeoutMs } from "./timeout-policy.js";
 
-/** Default cron job timeout policy re-exported with timer helpers. */
 export { DEFAULT_JOB_TIMEOUT_MS } from "./timeout-policy.js";
 
 const MAX_TIMER_DELAY_MS = 60_000;
