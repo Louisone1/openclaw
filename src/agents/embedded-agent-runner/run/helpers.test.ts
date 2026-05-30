@@ -80,11 +80,10 @@ describe("resolveFinalAssistantVisibleText", () => {
 });
 
 describe("buildErrorAgentMeta", () => {
-  it("preserves active session file for error exits after transcript rotation", () => {
+  it("preserves active session id for error exits", () => {
     expect(
       buildErrorAgentMeta({
         sessionId: "session-rotated",
-        sessionFile: "/tmp/session-rotated.jsonl",
         provider: "anthropic",
         model: "claude-opus-4-6",
         usageAccumulator: createUsageAccumulator(),
@@ -92,7 +91,6 @@ describe("buildErrorAgentMeta", () => {
       }),
     ).toMatchObject({
       sessionId: "session-rotated",
-      sessionFile: "/tmp/session-rotated.jsonl",
     });
   });
 });

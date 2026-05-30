@@ -3935,7 +3935,6 @@ export async function runEmbeddedAttempt(
                 unwindowedContextEngineMessagesForPrecheck
                   ? { unwindowedMessageCount: unwindowedContextEngineMessagesForPrecheck.length }
                   : {}),
-                ...(params.sessionFile ? { sessionFile: params.sessionFile } : {}),
               }),
             );
           }
