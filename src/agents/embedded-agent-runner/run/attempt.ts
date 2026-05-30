@@ -3234,9 +3234,8 @@ export async function runEmbeddedAttempt(
               `overflowTokens=${request.overflowTokens} ` +
               `toolResultReducibleChars=${request.toolResultReducibleChars} ` +
               `effectiveReserveTokens=${request.effectiveReserveTokens} ` +
-              `prePromptMessageCount=${prePromptMessageCount} ` +
-              (extra ? `${extra} ` : "") +
-              `sessionFile=${params.sessionFile}`,
+              `prePromptMessageCount=${prePromptMessageCount}` +
+              (extra ? ` ${extra}` : ""),
           );
         };
         if (request.route === "truncate_tool_results_only") {
@@ -3824,7 +3823,7 @@ export async function runEmbeddedAttempt(
                 `historyImageBlocks=${sessionSummary.totalImageBlocks} ` +
                 `systemPromptChars=${systemLen} promptChars=${promptLen} ` +
                 `promptImages=${imageResult.images.length} ` +
-                `provider=${params.provider}/${params.modelId} sessionFile=${params.sessionFile}`,
+                `provider=${params.provider}/${params.modelId}`,
             );
           }
 
@@ -3929,8 +3928,7 @@ export async function runEmbeddedAttempt(
                   `promptBudgetBeforeReserve=${preemptiveCompaction.promptBudgetBeforeReserve} ` +
                   `overflowTokens=${preemptiveCompaction.overflowTokens} ` +
                   `toolResultReducibleChars=${preemptiveCompaction.toolResultReducibleChars} ` +
-                  `effectiveReserveTokens=${preemptiveCompaction.effectiveReserveTokens} ` +
-                  `sessionFile=${params.sessionFile}`,
+                  `effectiveReserveTokens=${preemptiveCompaction.effectiveReserveTokens}`,
               );
               skipPromptSubmission = true;
             }
@@ -3938,7 +3936,7 @@ export async function runEmbeddedAttempt(
               log.warn(
                 `[context-overflow-precheck] early tool-result truncation did not help for ` +
                   `${params.provider}/${params.modelId}; falling back to compaction ` +
-                  `reason=${truncationResult.reason ?? "unknown"} sessionFile=${params.sessionFile}`,
+                  `reason=${truncationResult.reason ?? "unknown"}`,
               );
               preflightRecovery = { route: "compact_only" };
               promptError = new Error(PREEMPTIVE_OVERFLOW_ERROR_TEXT);
@@ -3962,8 +3960,7 @@ export async function runEmbeddedAttempt(
                 `overflowTokens=${preemptiveCompaction.overflowTokens} ` +
                 `toolResultReducibleChars=${preemptiveCompaction.toolResultReducibleChars} ` +
                 `reserveTokens=${reserveTokens} ` +
-                `effectiveReserveTokens=${preemptiveCompaction.effectiveReserveTokens} ` +
-                `sessionFile=${params.sessionFile}`,
+                `effectiveReserveTokens=${preemptiveCompaction.effectiveReserveTokens}`,
             );
             skipPromptSubmission = true;
           }
