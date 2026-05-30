@@ -71,7 +71,6 @@ function resolveEntryTranscriptLockPaths(params: {
       : path.resolve(params.sessionsDir, trimmed);
     paths.add(`${transcriptPath}.lock`);
   };
-  push(params.entry.sessionFile);
   if (typeof params.entry.sessionId === "string" && params.entry.sessionId.trim()) {
     push(`${params.entry.sessionId}.jsonl`);
   }
