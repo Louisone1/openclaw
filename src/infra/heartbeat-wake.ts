@@ -355,7 +355,6 @@ export function hasPendingHeartbeatWake() {
   return pendingWakes.size > 0 || Boolean(timer) || scheduled;
 }
 
-/** Reset heartbeat wake scheduler state for tests. */
 export function resetHeartbeatWakeStateForTests() {
   if (timer) {
     clearTimeout(timer);
