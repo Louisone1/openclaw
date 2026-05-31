@@ -1176,7 +1176,6 @@ export async function createContextEngineAttemptRunner(params: {
   const agentDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-ctx-engine-agent-"));
   const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-ctx-engine-state-"));
   const sessionId = "embedded-session";
-  const sessionFile = path.join(agentDir, "sessions", `${sessionId}.jsonl`);
   params.tempPaths.push(workspaceDir, agentDir, stateDir);
   const seedMessages: AgentMessage[] =
     params.sessionMessages ?? ([{ role: "user", content: "seed", timestamp: 1 }] as AgentMessage[]);
@@ -1220,7 +1219,6 @@ export async function createContextEngineAttemptRunner(params: {
     )({
       sessionId,
       sessionKey: params.sessionKey,
-      sessionFile,
       workspaceDir,
       agentDir,
       config: {},
