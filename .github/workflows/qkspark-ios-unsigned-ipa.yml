@@ -49,6 +49,15 @@ jobs:
       - name: Generate iOS project
         run: |
           ./scripts/ios-write-version-xcconfig.sh --build-number "${{ github.run_number }}"
+          # CI-only: build a phone-only IPA. GitHub macos-26 image lacks watchOS 26.1,
+          # while the default OpenClaw scheme embeds a Watch app.
+          python3 - <<'INNERPY'
+from pathlib import Path
+p = Path('apps/ios/project.yml')
+s = p.read_text()
+s = s.replace('      - target: OpenClawWatchApp\n', '')
+p.write_text(s)
+INNERPY
           cd apps/ios
           cat > LocalSigning.xcconfig <<'EOF'
           OPENCLAW_CODE_SIGN_STYLE = Manual
