@@ -905,7 +905,6 @@ function appendMessageToolReadHint(
   return description;
 }
 
-/** Creates the channel message AgentTool. */
 export function createMessageTool(options?: MessageToolOptions): AnyAgentTool {
   const loadConfigForTool = options?.getRuntimeConfig ?? getRuntimeConfig;
   const getScopedSecretTargetsForTool =
