@@ -234,7 +234,6 @@ function markReplyRunDiagnosticWorkEnded(params: { sessionKey: string; sessionId
   });
 }
 
-/** Creates and registers a tracked reply operation for one session key. */
 export function createReplyOperation(params: {
   sessionKey: string;
   sessionId: string;
@@ -514,12 +513,10 @@ export function resolveActiveReplyRunSessionId(sessionKey: string): string | und
   return replyRunRegistry.resolveSessionId(sessionKey);
 }
 
-/** Returns whether a current session id has an active reply run. */
 export function isReplyRunActiveForSessionId(sessionId: string): boolean {
   return resolveReplyRunForCurrentSessionId(sessionId) !== undefined;
 }
 
-/** Returns whether the reply run for a session id is actively streaming. */
 export function isReplyRunStreamingForSessionId(sessionId: string): boolean {
   const operation = resolveReplyRunForCurrentSessionId(sessionId);
   if (!operation || operation.phase !== "running") {
