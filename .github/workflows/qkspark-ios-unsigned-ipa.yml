@@ -6,11 +6,11 @@ on:
 jobs:
   build-unsigned-ipa:
     runs-on: macos-26
-    timeout-minutes: 120
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode and install iOS platform
+      - name: Select Xcode and force-install iOS platform
         run: |
           set -euo pipefail
           if [ -d /Applications/Xcode_26.1.1.app ]; then
@@ -24,13 +24,17 @@ jobs:
           else
             sudo xcode-select -s /Applications/Xcode.app
           fi
+          sudo xcodebuild -runFirstLaunch || true
           xcodebuild -version
           swift --version
-          if ! xcrun --sdk iphoneos --show-sdk-version; then
-            echo "iOS platform missing; attempting download" >&2
-            sudo xcodebuild -downloadPlatform iOS || xcodebuild -downloadPlatform iOS
-            xcrun --sdk iphoneos --show-sdk-version
-          fi
+          echo "Available Xcodes:" && ls -1 /Applications | grep '^Xcode' || true
+          echo "Before download platforms:" && find "$(xcode-select -p)/Platforms" -maxdepth 2 -type d -name '*.platform' -print || true
+          echo "Before download SDKs:" && xcodebuild -showsdks || true
+          echo "Force downloading/installing iOS platform if needed..."
+          sudo xcodebuild -downloadPlatform iOS || xcodebuild -downloadPlatform iOS || true
+          echo "After download platforms:" && find "$(xcode-select -p)/Platforms" -maxdepth 2 -type d -name '*.platform' -print || true
+          echo "After download SDKs:" && xcodebuild -showsdks || true
+          xcrun --sdk iphoneos --show-sdk-version
 
       - name: Install tools
         run: |
@@ -60,6 +64,8 @@ jobs:
           OPENCLAW_WATCH_EXTENSION_PROFILE =
           EOF
           xcodegen generate
+          echo "Destinations after project generation:"
+          xcodebuild -project OpenClaw.xcodeproj -scheme OpenClaw -showdestinations || true
 
       - name: Build device app without signing
         run: |
@@ -70,6 +76,7 @@ jobs:
             -scheme OpenClaw \
             -configuration Release \
             -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
             -derivedDataPath build/DerivedData \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
