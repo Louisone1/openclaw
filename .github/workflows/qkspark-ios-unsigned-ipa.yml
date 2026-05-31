@@ -1,0 +1,98 @@
+name: QKSPARK iOS Unsigned IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-unsigned-ipa:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          if [ -d /Applications/Xcode_16.4.app ]; then
+            sudo xcode-select -s /Applications/Xcode_16.4.app
+          elif [ -d /Applications/Xcode_16.3.app ]; then
+            sudo xcode-select -s /Applications/Xcode_16.3.app
+          elif [ -d /Applications/Xcode_16.2.app ]; then
+            sudo xcode-select -s /Applications/Xcode_16.2.app
+          else
+            sudo xcode-select -s /Applications/Xcode.app
+          fi
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Install tools
+        run: |
+          brew install xcodegen swiftformat swiftlint
+          corepack enable
+          pnpm --version
+          xcodegen --version
+
+      - name: Install JS dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate iOS project
+        run: |
+          ./scripts/ios-write-version-xcconfig.sh --build-number "${{ github.run_number }}"
+          cd apps/ios
+          cat > LocalSigning.xcconfig <<'EOF'
+          OPENCLAW_CODE_SIGN_STYLE = Manual
+          OPENCLAW_DEVELOPMENT_TEAM =
+          OPENCLAW_APP_BUNDLE_ID = ai.openclaw.ios.unsigned.qkspark
+          OPENCLAW_SHARE_BUNDLE_ID = ai.openclaw.ios.unsigned.qkspark.share
+          OPENCLAW_ACTIVITY_WIDGET_BUNDLE_ID = ai.openclaw.ios.unsigned.qkspark.activitywidget
+          OPENCLAW_WATCH_APP_BUNDLE_ID = ai.openclaw.ios.unsigned.qkspark.watchkitapp
+          OPENCLAW_WATCH_EXTENSION_BUNDLE_ID = ai.openclaw.ios.unsigned.qkspark.watchkitapp.extension
+          OPENCLAW_APP_PROFILE =
+          OPENCLAW_SHARE_PROFILE =
+          OPENCLAW_WATCH_APP_PROFILE =
+          OPENCLAW_WATCH_EXTENSION_PROFILE =
+          EOF
+          xcodegen generate
+
+      - name: Build device app without signing
+        run: |
+          set -euo pipefail
+          cd apps/ios
+          xcodebuild \
+            -project OpenClaw.xcodeproj \
+            -scheme OpenClaw \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            build
+
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          cd apps/ios
+          APP_PATH="$(find build/DerivedData/Build/Products/Release-iphoneos -maxdepth 2 -name 'OpenClaw.app' -type d | head -1)"
+          if [ -z "$APP_PATH" ]; then
+            echo "OpenClaw.app not found" >&2
+            find build/DerivedData/Build/Products -maxdepth 4 -type d -name '*.app' -print >&2 || true
+            exit 1
+          fi
+          rm -rf build/unsigned-ipa
+          mkdir -p build/unsigned-ipa/Payload
+          cp -R "$APP_PATH" build/unsigned-ipa/Payload/OpenClaw.app
+          find build/unsigned-ipa/Payload -name '_CodeSignature' -type d -prune -exec rm -rf {} + || true
+          find build/unsigned-ipa/Payload -name 'embedded.mobileprovision' -type f -delete || true
+          (cd build/unsigned-ipa && zip -qry ../OpenClaw-unsigned-resignable.ipa Payload)
+          ls -lh build/OpenClaw-unsigned-resignable.ipa
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenClaw-unsigned-resignable-ipa
+          path: apps/ios/build/OpenClaw-unsigned-resignable.ipa
+          if-no-files-found: error
