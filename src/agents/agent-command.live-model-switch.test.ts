@@ -833,9 +833,10 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     state.deliverAgentCommandResultMock.mockResolvedValue(undefined);
     state.updateSessionEntryAfterAgentRunMock.mockResolvedValue(undefined);
     state.trajectoryFlushMock.mockResolvedValue(undefined);
-    state.prepareInternalSessionEffectsTranscriptMock.mockResolvedValue(
-      "/tmp/openclaw-internal-run.jsonl",
-    );
+    state.prepareInternalSessionEffectsTranscriptMock.mockResolvedValue({
+      agentId: "main",
+      sessionId: "internal-agent-runs:test-run",
+    });
     state.removeInternalSessionEffectsTranscriptMock.mockResolvedValue(undefined);
   });
 
@@ -1001,9 +1002,9 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     state.sessionEntryMock = visibleEntry;
     state.sessionStoreMock = sessionStore;
     state.storePathMock = "/tmp/openclaw-session-store.json";
-    const attemptCalls: Array<{ sessionFile?: string; sessionEntry?: SessionEntry }> = [];
+    const attemptCalls: Array<{ sessionId?: string; sessionEntry?: SessionEntry }> = [];
     state.runAgentAttemptMock.mockImplementation(async (params) => {
-      attemptCalls.push(params as { sessionFile?: string; sessionEntry?: SessionEntry });
+      attemptCalls.push(params as { sessionId?: string; sessionEntry?: SessionEntry });
       return makeSuccessResult("openai", "gpt-5.4");
     });
 
@@ -1015,12 +1016,16 @@ describe("agentCommand – LiveSessionModelSwitchError retry", () => {
     });
 
     expect(state.prepareInternalSessionEffectsTranscriptMock).toHaveBeenCalledWith({
-      sessionFile: "/tmp/session.jsonl",
+      agentId: "default",
       runId: expect.any(String),
+      sourceSessionId: "session-1",
     });
     expect(attemptCalls).toHaveLength(1);
-    expect(attemptCalls[0]?.sessionFile).toBe("/tmp/openclaw-internal-run.jsonl");
-    expect(attemptCalls[0]?.sessionEntry).toStrictEqual(visibleEntry);
+    expect(attemptCalls[0]?.sessionId).toBe("internal-agent-runs:test-run");
+    expect(attemptCalls[0]?.sessionEntry).toStrictEqual({
+      ...visibleEntry,
+      sessionId: "internal-agent-runs:test-run",
+    });
     expect(state.persistSessionEntryMock).not.toHaveBeenCalled();
     expect(state.updateSessionEntryAfterAgentRunMock).not.toHaveBeenCalled();
     expect(sessionStore["agent:main:main"]).toBe(visibleEntry);

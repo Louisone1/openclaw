@@ -1,5 +1,6 @@
 import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
 import type { cleanupBrowserSessionsForLifecycleEnd } from "../browser-lifecycle-cleanup.js";
+import { resolveAgentIdFromSessionKey } from "../config/sessions.js";
 import type { callGateway as defaultCallGateway } from "../gateway/call.js";
 import { formatErrorMessage, readErrorName } from "../infra/errors.js";
 import { defaultRuntime } from "../runtime.js";
@@ -420,7 +421,7 @@ export function createSubagentRegistryLifecycleController(params: {
       const captured = await params.captureSubagentCompletionReply(entry.childSessionKey, {
         waitForReply: entry.expectsCompletionMessage === true,
         outcome,
-        sessionFile: entry.execution?.transcriptFile,
+        transcriptSessionId: entry.execution?.transcriptSessionId,
       });
       completion.resultText = captured?.trim() ? capFrozenResultText(captured) : null;
     } catch {
@@ -741,7 +742,10 @@ export function createSubagentRegistryLifecycleController(params: {
     cleanup: "delete" | "keep";
     completedAt: number;
   }) => {
-    void removeInternalSessionEffectsTranscript(cleanupParams.entry.execution?.transcriptFile);
+    void removeInternalSessionEffectsTranscript({
+      agentId: resolveAgentIdFromSessionKey(cleanupParams.entry.childSessionKey),
+      sessionId: cleanupParams.entry.execution?.transcriptSessionId,
+    });
     if (cleanupParams.entry.spawnMode !== "session") {
       void retireSessionMcpRuntimeForSessionKey({
         sessionKey: cleanupParams.entry.childSessionKey,

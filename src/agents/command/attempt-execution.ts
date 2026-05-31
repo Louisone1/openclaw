@@ -354,7 +354,6 @@ export function runAgentAttempt(params: {
   originalProvider: string;
   cfg: OpenClawConfig;
   sessionEntry: SessionEntry | undefined;
-  sessionFile?: string;
   sessionId: string;
   sessionKey: string | undefined;
   sessionAgentId: string;
@@ -585,7 +584,6 @@ export function runAgentAttempt(params: {
 
   return runEmbeddedAgent({
     sessionId: params.sessionId,
-    sessionFile: params.sessionFile,
     sessionKey: params.sessionKey,
     agentId: params.sessionAgentId,
     trigger: "user",

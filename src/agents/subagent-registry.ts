@@ -945,7 +945,10 @@ async function discardSuspendedPendingFinalDelivery(
   if (shouldDeleteAttachments) {
     await safeRemoveAttachmentsDir(entry);
   }
-  await removeInternalSessionEffectsTranscript(entry.execution?.transcriptFile);
+  await removeInternalSessionEffectsTranscript({
+    agentId: resolveAgentIdFromSessionKey(entry.childSessionKey),
+    sessionId: entry.execution?.transcriptSessionId,
+  });
   const completionReason = entry.endedReason ?? SUBAGENT_ENDED_REASON_COMPLETE;
   completeCleanupBookkeeping({
     runId,
@@ -1330,7 +1333,7 @@ export function replaceSubagentRunAfterSteer(params: {
   fallback?: SubagentRunRecord;
   runTimeoutSeconds?: number;
   preserveFrozenResultFallback?: boolean;
-  transcriptFile?: string;
+  transcriptSessionId?: string;
 }) {
   return subagentRunManager.replaceSubagentRunAfterSteer(params);
 }

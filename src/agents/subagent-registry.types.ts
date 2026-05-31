@@ -28,7 +28,7 @@ export type SubagentExecutionState = {
   outcome?: SubagentRunOutcome;
   interruptedAt?: number;
   interruptionReason?: "gateway-restart" | "lost-execution-context";
-  transcriptFile?: string;
+  transcriptSessionId?: string;
 };
 
 export type SubagentCompletionState = {

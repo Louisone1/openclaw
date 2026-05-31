@@ -698,39 +698,38 @@ async function agentCommandInternal(
               threadId: opts.threadId,
             })
           : undefined;
-        const internalSessionFile = suppressVisibleSessionEffects
+        const internalTranscript = suppressVisibleSessionEffects
           ? await prepareInternalSessionEffectsTranscript({
-              sessionFile:
-                visibleSessionEntryForInternalEffects?.sessionFile ??
-                internalSource?.sessionEntry?.sessionFile,
+              agentId: sessionAgentId,
               runId,
+              sourceSessionId:
+                visibleSessionEntryForInternalEffects?.sessionId ?? internalSource?.sessionId,
             })
           : undefined;
-        const transcriptSessionEntry: SessionEntry | undefined = internalSessionFile
+        const transcriptSessionEntry: SessionEntry | undefined = internalTranscript
           ? {
               ...(sessionEntry ?? {
                 sessionId,
                 updatedAt: Date.now(),
                 sessionStartedAt: Date.now(),
               }),
-              sessionId,
-              sessionFile: internalSessionFile,
+              sessionId: internalTranscript.sessionId,
             }
           : sessionEntry;
         sessionEntry = await attemptExecutionRuntime.persistAcpTurnTranscript({
           body,
           transcriptBody,
           finalText: finalTextRaw,
-          sessionId,
+          sessionId: internalTranscript?.sessionId ?? sessionId,
           sessionKey,
           sessionEntry: transcriptSessionEntry,
-          sessionStore,
+          sessionStore: internalTranscript ? undefined : sessionStore,
           sessionAgentId,
           threadId: opts.threadId,
           sessionCwd: resolveAcpSessionCwd(acpResolution.meta) ?? workspaceDir,
           config: cfg,
         });
-        if (internalSessionFile) {
+        if (internalTranscript) {
           sessionEntry = prepared.sessionEntry;
         }
       } catch (error) {
@@ -1189,11 +1188,26 @@ async function agentCommandInternal(
       });
       sessionEntry = resolvedTranscriptTarget.sessionEntry;
     }
-    const resolvedSessionFile =
-      visibleSessionEntryForInternalEffects?.sessionFile ?? sessionEntry?.sessionFile;
-    const attemptSessionFile = suppressVisibleSessionEffects
-      ? await prepareInternalSessionEffectsTranscript({ sessionFile: resolvedSessionFile, runId })
-      : resolvedSessionFile;
+    const internalTranscript = suppressVisibleSessionEffects
+      ? await prepareInternalSessionEffectsTranscript({
+          agentId: sessionAgentId,
+          runId,
+          sourceSessionId:
+            visibleSessionEntryForInternalEffects?.sessionId ?? sessionEntry?.sessionId,
+        })
+      : undefined;
+    const attemptSessionId = internalTranscript?.sessionId ?? sessionId;
+    const internalAttemptSessionEntry: SessionEntry | undefined = internalTranscript
+      ? {
+          ...(visibleSessionEntryForInternalEffects ??
+            sessionEntry ?? {
+              sessionId,
+              updatedAt: Date.now(),
+              sessionStartedAt: Date.now(),
+            }),
+          sessionId: internalTranscript.sessionId,
+        }
+      : undefined;
 
     const startedAt = Date.now();
     const attemptLifecycleState = {
@@ -1279,7 +1293,7 @@ async function agentCommandInternal(
               providerOverride === autoFallbackPrimaryProbe.provider &&
               modelOverride === autoFallbackPrimaryProbe.model;
             const attemptSessionEntry = suppressVisibleSessionEffects
-              ? visibleSessionEntryForInternalEffects
+              ? internalAttemptSessionEntry
               : autoFallbackPrimaryProbe &&
                   providerOverride === autoFallbackPrimaryProbe.fallbackProvider &&
                   !isAutoFallbackPrimaryProbeCandidate
@@ -1304,8 +1318,7 @@ async function agentCommandInternal(
               originalProvider: provider,
               cfg,
               sessionEntry: attemptSessionEntry,
-              sessionFile: attemptSessionFile,
-              sessionId,
+              sessionId: attemptSessionId,
               sessionKey,
               sessionAgentId,
               workspaceDir,

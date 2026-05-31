@@ -189,25 +189,22 @@ function selectSubagentOutputText(snapshot: SubagentOutputSnapshot): string | un
 export async function readSubagentOutput(
   sessionKey: string,
   _outcome?: SubagentRunOutcome,
-  options?: { sessionFile?: string },
+  options?: { transcriptSessionId?: string },
 ): Promise<string | undefined> {
   let messages: unknown[] | undefined;
-  if (options?.sessionFile) {
+  if (options?.transcriptSessionId) {
     const agentId = resolveAgentIdFromSessionKey(sessionKey);
-    const entry = getSessionEntry({ agentId, sessionKey });
-    messages = entry?.sessionId
-      ? await subagentAnnounceOutputDeps.readSessionMessagesAsync(
-          {
-            agentId,
-            sessionId: entry.sessionId,
-          },
-          {
-            mode: "recent",
-            maxMessages: 100,
-            maxBytes: 1024 * 1024,
-          },
-        )
-      : [];
+    messages = await subagentAnnounceOutputDeps.readSessionMessagesAsync(
+      {
+        agentId,
+        sessionId: options.transcriptSessionId,
+      },
+      {
+        mode: "recent",
+        maxMessages: 100,
+        maxBytes: 1024 * 1024,
+      },
+    );
   }
   const history =
     messages === undefined
@@ -278,7 +275,13 @@ export function applySubagentWaitOutcome(params: {
   } else if (params.wait?.status === "error") {
     outcome = { status: "error", error: waitError };
   } else if (params.wait?.status === "ok") {
-    outcome = { status: "ok" };
+    if (params.wait.livenessState === "blocked") {
+      outcome = { status: "error", error: waitError };
+    } else if (params.wait.stopReason === "aborted") {
+      outcome = { status: "error", error: waitError ?? "subagent run terminated" };
+    } else {
+      outcome = { status: "ok" };
+    }
   }
   next.outcome = outcome ? withSubagentOutcomeTiming(outcome, next) : undefined;
   return next;
@@ -286,7 +289,11 @@ export function applySubagentWaitOutcome(params: {
 
 export async function captureSubagentCompletionReply(
   sessionKey: string,
-  options?: { waitForReply?: boolean; outcome?: SubagentRunOutcome; sessionFile?: string },
+  options?: {
+    waitForReply?: boolean;
+    outcome?: SubagentRunOutcome;
+    transcriptSessionId?: string;
+  },
 ): Promise<string | undefined> {
   return await captureSubagentCompletionReplyUsing({
     sessionKey,
@@ -295,7 +302,7 @@ export async function captureSubagentCompletionReply(
     retryIntervalMs: isFastTestMode() ? FAST_TEST_RETRY_INTERVAL_MS : 100,
     readSubagentOutput: async (nextSessionKey) =>
       await readSubagentOutput(nextSessionKey, options?.outcome, {
-        sessionFile: options?.sessionFile,
+        transcriptSessionId: options?.transcriptSessionId,
       }),
   });
 }

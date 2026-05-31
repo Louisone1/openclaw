@@ -1,4 +1,5 @@
 import { getRuntimeConfig } from "../config/config.js";
+import { resolveAgentIdFromSessionKey } from "../config/sessions.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { callGateway } from "../gateway/call.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
@@ -7,6 +8,7 @@ import { formatBlockedLivenessError, isBlockedLivenessState } from "../shared/ag
 import { createRunningTaskRun } from "../tasks/detached-task-runtime.js";
 import { normalizeDeliveryContext } from "../utils/delivery-context.shared.js";
 import type { DeliveryContext } from "../utils/delivery-context.types.js";
+import { removeInternalSessionEffectsTranscript } from "./internal-session-effects.js";
 import { isAbortedAgentStopReason } from "./run-termination.js";
 import { isRecoverableAgentWaitError, waitForAgentRun } from "./run-wait.js";
 import type { ensureRuntimePluginsLoaded as ensureRuntimePluginsLoadedFn } from "./runtime-plugins.js";
@@ -528,7 +530,7 @@ export function createSubagentRunManager(params: {
     fallback?: SubagentRunRecord;
     runTimeoutSeconds?: number;
     preserveFrozenResultFallback?: boolean;
-    transcriptFile?: string;
+    transcriptSessionId?: string;
   }) => {
     const previousRunId = replaceParams.previousRunId.trim();
     const nextRunId = replaceParams.nextRunId.trim();
@@ -546,6 +548,10 @@ export function createSubagentRunManager(params: {
       params.clearPendingLifecycleError(previousRunId);
       params.runs.delete(previousRunId);
       params.resumedRuns.delete(previousRunId);
+      void removeInternalSessionEffectsTranscript({
+        agentId: resolveAgentIdFromSessionKey(source.childSessionKey),
+        sessionId: source.execution?.transcriptSessionId,
+      });
     }
 
     const now = Date.now();
@@ -585,7 +591,7 @@ export function createSubagentRunManager(params: {
       execution: {
         status: "running",
         startedAt: now,
-        transcriptFile: replaceParams.transcriptFile,
+        transcriptSessionId: replaceParams.transcriptSessionId,
       },
       completion: {
         required: source.expectsCompletionMessage === true,

@@ -21,7 +21,7 @@ import { callGateway } from "../gateway/call.js";
 import { readSessionMessagesAsync } from "../gateway/session-transcript-readers.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
-import { resolveInternalSessionEffectsTranscriptPath } from "./internal-session-effects.js";
+import { resolveInternalSessionEffectsTranscriptSessionId } from "./internal-session-effects.js";
 import {
   evaluateSubagentRecoveryGate,
   markSubagentRecoveryAttempt,
@@ -150,7 +150,7 @@ async function resumeOrphanedSession(params: {
       previousRunId: params.originalRunId,
       nextRunId: result.runId,
       fallback: params.originalRun,
-      transcriptFile: resolveInternalSessionEffectsTranscriptPath(result.runId),
+      transcriptSessionId: resolveInternalSessionEffectsTranscriptSessionId(result.runId),
     });
     if (!remapped) {
       log.warn(
