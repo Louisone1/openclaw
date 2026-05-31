@@ -5596,6 +5596,7 @@ describe("runAgentTurnWithFallback", () => {
     const followupRun = createFollowupRun();
     followupRun.run.provider = "openai";
     followupRun.run.model = "gpt-4o";
+    followupRun.images = [{ type: "image", data: "base64", mimeType: "image/png" }];
 
     const sessionEntry: SessionEntry = {
       sessionId: "session",

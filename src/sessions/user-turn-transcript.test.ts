@@ -406,23 +406,19 @@ describe("user turn transcript persistence", () => {
   });
 
   describe("persistUserTurnTranscript", () => {
-    it("resolves the session file and persists the user turn", async () => {
+    it("resolves the SQLite target and persists the user turn", async () => {
       const dir = createTempDir("openclaw-user-turn-persist-");
-      const transcriptPath = path.join(dir, "session.jsonl");
-      const sessionStore = {
-        main: {
-          sessionId: "session-1",
-          sessionFile: transcriptPath,
-          updatedAt: 1,
-        },
+      const databasePath = path.join(dir, "agent.sqlite");
+      const sessionEntry = {
+        sessionId: "session-1",
+        updatedAt: 1,
       };
 
       const persisted = await persistUserTurnTranscript({
         sessionId: "session-1",
         sessionKey: "main",
-        sessionEntry: sessionStore.main,
-        sessionStore,
-        storePath: path.join(dir, "sessions.json"),
+        sessionEntry,
+        storePath: databasePath,
         agentId: "agent",
         cwd: dir,
         input: {
@@ -432,10 +428,10 @@ describe("user turn transcript persistence", () => {
         updateMode: "none",
       });
 
-      expect(persisted?.sessionFile).toBeTruthy();
-      expect(fs.existsSync(persisted?.sessionFile ?? "")).toBe(true);
+      expect(persisted?.databasePath).toBe(databasePath);
+      expect(fs.existsSync(databasePath)).toBe(true);
       expect(
-        readTranscriptMessages(persisted?.sessionFile ?? "", {
+        readTranscriptMessages(databasePath, {
           agentId: "agent",
           sessionId: "session-1",
         }),
@@ -658,7 +654,7 @@ describe("user turn transcript persistence", () => {
         },
       });
 
-      expect(persisted?.sessionFile).toBe(admittedTranscriptPath);
+      expect(persisted?.databasePath).toBe(admittedTranscriptPath);
       expect(fs.existsSync(staleTranscriptPath)).toBe(false);
       expect(
         readTranscriptMessages(admittedTranscriptPath, { sessionId: "admitted-session" }),

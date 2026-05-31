@@ -1127,7 +1127,6 @@ export async function runPreparedReply(
             sessionId: preparedSessionState.sessionId,
             sessionKey: sessionKey ?? preparedSessionState.sessionId,
             sessionEntry: preparedSessionState.sessionEntry,
-            ...(sessionStore ? { sessionStore } : {}),
             agentId,
             cwd: workspaceDir,
             config: cfg,

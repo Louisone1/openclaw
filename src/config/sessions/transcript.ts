@@ -190,20 +190,32 @@ export async function resolveSessionTranscriptTarget(params: {
   sessionKey: string;
   sessionEntry: SessionEntry | undefined;
   agentId: string;
+  storePath?: string;
   threadId?: string | number;
-}): Promise<{ agentId: string; sessionId: string; sessionEntry: SessionEntry | undefined }> {
+}): Promise<{
+  agentId: string;
+  databasePath?: string;
+  sessionId: string;
+  sessionEntry: SessionEntry | undefined;
+}> {
   let sessionEntry = params.sessionEntry;
+  const target = resolveTranscriptSessionStoreTarget({
+    agentId: params.agentId,
+    ...(params.storePath ? { storePath: params.storePath } : {}),
+  });
 
   const resolvedTranscript = await resolveAndPersistSessionTranscriptScope({
     sessionId: params.sessionId,
     sessionKey: params.sessionKey,
     sessionEntry,
-    agentId: params.agentId,
+    agentId: target.agentId,
+    ...(target.databasePath ? { path: target.databasePath } : {}),
   });
   sessionEntry = resolvedTranscript.sessionEntry;
 
   return {
     agentId: resolvedTranscript.agentId,
+    ...(target.databasePath ? { databasePath: target.databasePath } : {}),
     sessionId: resolvedTranscript.sessionId,
     sessionEntry,
   };

@@ -1629,10 +1629,17 @@ export async function runAgentTurnWithFallback(params: {
     model: string,
     candidateRun: FollowupRun["run"],
   ): Promise<(() => Promise<void>) | undefined> => {
+    // Image-bearing turns can route through imageModel just for this prompt.
+    // Do not turn that media-specific fallback into the session's text model.
+    const isCurrentTurnImageFallback =
+      (currentTurnImages.images?.length ?? 0) > 0 &&
+      candidateRun.hasSessionModelOverride !== true &&
+      candidateRun.modelOverrideSource === undefined;
     if (
       !params.sessionKey ||
       !params.activeSessionStore ||
       preserveUserFacingSessionState ||
+      isCurrentTurnImageFallback ||
       (provider === effectiveRun.provider && model === effectiveRun.model)
     ) {
       return undefined;

@@ -2703,11 +2703,8 @@ export const chatHandlers: GatewayRequestHandlers = {
         input: baseUserTurnInput,
         resolveInput: () => userTurnInputPromise,
         target: () => {
-          const {
-            entry: latestEntry,
-            databasePath: latestDatabasePath,
-            store: latestStore,
-          } = loadSessionEntry(sessionKey);
+          const { entry: latestEntry, databasePath: latestDatabasePath } =
+            loadSessionEntry(sessionKey);
           const resolvedSessionId = latestEntry?.sessionId ?? backingSessionId;
           if (!resolvedSessionId) {
             return undefined;
@@ -2716,7 +2713,6 @@ export const chatHandlers: GatewayRequestHandlers = {
             sessionId: resolvedSessionId,
             sessionKey,
             sessionEntry: latestEntry ?? entry,
-            sessionStore: latestStore,
             storePath: latestDatabasePath,
             agentId,
             config: cfg,

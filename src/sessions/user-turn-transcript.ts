@@ -59,7 +59,6 @@ type AppendUserTurnTranscriptMessageParams = {
   sessionId?: string;
   agentId?: string;
   sessionKey?: string;
-  sessionFile?: string;
   cwd?: string;
   config?: TranscriptAppendConfig;
   updateMode?: UserTurnTranscriptUpdateMode;
@@ -72,7 +71,6 @@ type PersistUserTurnTranscriptParams = {
   sessionId: string;
   sessionKey: string;
   sessionEntry: UserTurnSessionEntry | undefined;
-  sessionStore?: Record<string, UserTurnSessionEntry>;
   storePath?: string;
   agentId: string;
   threadId?: string | number;
@@ -92,7 +90,6 @@ type UserTurnTranscriptFileTarget = {
   sessionId?: string;
   agentId?: string;
   sessionKey?: string;
-  sessionFile?: string;
   cwd?: string;
   config?: TranscriptAppendConfig;
 };
@@ -100,7 +97,7 @@ type UserTurnTranscriptFileTarget = {
 type UserTurnTranscriptTarget = UserTurnTranscriptPersistenceTarget | UserTurnTranscriptFileTarget;
 
 type UserTurnTranscriptPersistResult = {
-  sessionFile: string;
+  databasePath?: string;
   sessionEntry: UserTurnSessionEntry | undefined;
   messageId: string;
   message: PersistedUserTurnMessage;
@@ -426,7 +423,7 @@ export async function appendUserTurnTranscriptMessage(
   params: AppendUserTurnTranscriptMessageParams,
 ): Promise<
   | {
-      sessionFile: string;
+      databasePath?: string;
       messageId: string;
       message: PersistedUserTurnMessage;
     }
@@ -441,7 +438,7 @@ export async function appendUserTurnTranscriptMessage(
   if (!sessionId) {
     return undefined;
   }
-  const updateSessionFile = normalizeOptionalText(params.sessionFile) ?? params.transcriptPath;
+  const databasePath = normalizeOptionalText(params.transcriptPath);
   const idempotencyKey = normalizeOptionalText(
     (resolvedMessage as unknown as { idempotencyKey?: string }).idempotencyKey,
   );
@@ -454,7 +451,7 @@ export async function appendUserTurnTranscriptMessage(
     });
     if (existing) {
       return {
-        sessionFile: updateSessionFile ?? params.transcriptPath ?? "",
+        ...(databasePath ? { databasePath } : {}),
         messageId: existing.messageId,
         message: existing.message,
       };
@@ -480,7 +477,6 @@ export async function appendUserTurnTranscriptMessage(
   switch (params.updateMode ?? "inline") {
     case "inline":
       emitSessionTranscriptUpdate({
-        ...(updateSessionFile ? { sessionFile: updateSessionFile } : {}),
         agentId,
         sessionId,
         ...(params.sessionKey ? { sessionKey: params.sessionKey } : {}),
@@ -493,7 +489,7 @@ export async function appendUserTurnTranscriptMessage(
   }
 
   return {
-    sessionFile: updateSessionFile ?? params.transcriptPath ?? "",
+    ...(databasePath ? { databasePath } : {}),
     messageId: appended.messageId,
     message: appended.message as PersistedUserTurnMessage,
   };
@@ -507,33 +503,20 @@ export async function persistUserTurnTranscript(
     return undefined;
   }
 
-  const { resolveSessionTranscriptFile } = await import("../config/sessions/transcript.js");
-  const { sessionEntry } = await resolveSessionTranscriptFile({
+  const { resolveSessionTranscriptTarget } = await import("../config/sessions/transcript.js");
+  const resolvedTarget = await resolveSessionTranscriptTarget({
     sessionId: params.sessionId,
     sessionKey: params.sessionKey,
     sessionEntry: params.sessionEntry,
-    ...(params.sessionStore ? { sessionStore: params.sessionStore } : {}),
     ...(params.storePath ? { storePath: params.storePath } : {}),
     agentId: params.agentId,
     ...(params.threadId !== undefined ? { threadId: params.threadId } : {}),
   });
-  const originalSessionFile = params.sessionEntry?.sessionFile;
-  const resolvedSessionFile = sessionEntry?.sessionFile;
-  const sessionFile =
-    originalSessionFile && path.extname(originalSessionFile) !== ".sqlite"
-      ? originalSessionFile
-      : resolvedSessionFile && path.extname(resolvedSessionFile) !== ".sqlite"
-        ? resolvedSessionFile
-        : `${params.sessionId}.jsonl`;
-
-  const transcriptPath =
-    params.storePath && path.extname(params.storePath) !== ".json" ? params.storePath : sessionFile;
   const appended = await appendUserTurnTranscriptMessage({
-    ...(transcriptPath ? { transcriptPath } : {}),
-    ...(sessionFile ? { sessionFile } : {}),
+    ...(resolvedTarget.databasePath ? { transcriptPath: resolvedTarget.databasePath } : {}),
     message,
-    sessionId: params.sessionId,
-    agentId: params.agentId,
+    sessionId: resolvedTarget.sessionId,
+    agentId: resolvedTarget.agentId,
     sessionKey: params.sessionKey,
     ...(params.cwd ? { cwd: params.cwd } : {}),
     ...(params.config ? { config: params.config } : {}),
@@ -546,7 +529,7 @@ export async function persistUserTurnTranscript(
 
   return {
     ...appended,
-    sessionEntry,
+    sessionEntry: resolvedTarget.sessionEntry,
   };
 }
 
