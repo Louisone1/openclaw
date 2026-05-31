@@ -28,11 +28,8 @@ jobs:
           xcodebuild -version
           swift --version
           echo "Available Xcodes:" && ls -1 /Applications | grep '^Xcode' || true
-          echo "Before download platforms:" && find "$(xcode-select -p)/Platforms" -maxdepth 2 -type d -name '*.platform' -print || true
           echo "Before download SDKs:" && xcodebuild -showsdks || true
-          echo "Force downloading/installing iOS platform if needed..."
           sudo xcodebuild -downloadPlatform iOS || xcodebuild -downloadPlatform iOS || true
-          echo "After download platforms:" && find "$(xcode-select -p)/Platforms" -maxdepth 2 -type d -name '*.platform' -print || true
           echo "After download SDKs:" && xcodebuild -showsdks || true
           xcrun --sdk iphoneos --show-sdk-version
 
@@ -46,18 +43,11 @@ jobs:
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Generate iOS project
+      - name: Generate phone-only iOS project
         run: |
+          set -euo pipefail
           ./scripts/ios-write-version-xcconfig.sh --build-number "${{ github.run_number }}"
-          # CI-only: build a phone-only IPA. GitHub macos-26 image lacks watchOS 26.1,
-          # while the default OpenClaw scheme embeds a Watch app.
-          python3 - <<'INNERPY'
-from pathlib import Path
-p = Path('apps/ios/project.yml')
-s = p.read_text()
-s = s.replace('      - target: OpenClawWatchApp\n', '')
-p.write_text(s)
-INNERPY
+          python3 -c "from pathlib import Path; p=Path('apps/ios/project.yml'); s=p.read_text(); s=s.replace('      - target: OpenClawWatchApp\n', ''); p.write_text(s)"
           cd apps/ios
           cat > LocalSigning.xcconfig <<'EOF'
           OPENCLAW_CODE_SIGN_STYLE = Manual
